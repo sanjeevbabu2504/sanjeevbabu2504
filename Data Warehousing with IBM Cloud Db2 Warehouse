@@ -1,1 +1,105 @@
+import ibm_db
+
+# Replace these values with your Db2 Warehouse credentials
+db_credentials = {
+    "hostname": "your-db-hostname",
+    "port": "your-db-port",
+    "username": "your-username",
+    "password": "your-password",
+    "database": "your-database-name",
+}
+
+# Create a connection string
+conn_str = (
+    "DRIVER={{IBM DB2 ODBC DRIVER}};"
+    "DATABASE={0};"
+    "HOSTNAME={1};"
+    "PORT={2};"
+    "PROTOCOL=TCPIP;"
+    "UID={3};"
+    "PWD={4};".format(
+        db_credentials["database"],
+        db_credentials["hostname"],
+        db_credentials["port"],
+        db_credentials["username"],
+        db_credentials["password"],
+    )
+)
+
+# Connect to Db2 Warehouse
+conn = ibm_db.connect(conn_str, "", "")
+if conn:
+    print("Connected to Db2 Warehouse")
+else:
+    print(ibm_db.conn_errormsg())
+
+# Define Data Warehouse Schema
+def create_data_warehouse_schema():
+    schema_sql = """
+    CREATE SCHEMA data_warehouse;
+    -- Add your table definitions here
+    """
+    stmt = ibm_db.exec_immediate(conn, schema_sql)
+    print("Data warehouse schema created.")
+
+# Implement ETL Processes
+def etl_process():
+    # Extract data from source (replace with your data source query)
+    extract_sql = "SELECT * FROM your_source_table"
+    extract_stmt = ibm_db.exec_immediate(conn, extract_sql)
+    extracted_data = ibm_db.fetch_assoc(extract_stmt)
+
+    # Transform data (replace with your data transformation logic)
+    transformed_data = transform_data(extracted_data)
+
+    # Load data into the data warehouse (replace with your target table)
+    load_sql = "INSERT INTO data_warehouse.target_table VALUES (?, ?, ?)"
+    load_stmt = ibm_db.prepare(conn, load_sql)
+
+    for row in transformed_data:
+        ibm_db.execute(load_stmt, tuple(row.values()))
+
+    ibm_db.commit(conn)
+    print("ETL process completed.")
+
+# Data Exploration Queries
+def explore_data():
+    query_sql = "SELECT * FROM data_warehouse.target_table LIMIT 10"
+    query_stmt = ibm_db.exec_immediate(conn, query_sql)
+
+    result = ibm_db.fetch_assoc(query_stmt)
+    while result:
+        print(result)
+        result = ibm_db.fetch_assoc(query_stmt)
+
+# Actionable Insights (Example: Calculate average sales)
+def actionable_insights():
+    avg_sales_sql = "SELECT AVG(sales_amount) FROM data_warehouse.sales_data"
+    avg_sales_stmt = ibm_db.exec_immediate(conn, avg_sales_sql)
+
+    avg_sales_result = ibm_db.fetch_assoc(avg_sales_stmt)
+    print("Average Sales Amount:", avg_sales_result["1"])
+
+# Data Transformation Logic (Replace with your own logic)
+def transform_data(data):
+    transformed_data = []
+    for row in data:
+        # Example: Transform date format
+        row["transformed_date"] = transform_date(row["original_date"])
+        transformed_data.append(row)
+    return transformed_data
+
+def transform_date(original_date):
+    # Example: Transform date from 'YYYY-MM-DD' to 'DD-MM-YYYY'
+    parts = original_date.split('-')
+    return f"{parts[2]}-{parts[1]}-{parts[0]}"
+
+# Example Usage
+create_data_warehouse_schema()
+etl_process()
+explore_data()
+actionable_insights()
+
+# Close the connection
+ibm_db.close(conn)
 
